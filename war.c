@@ -11,10 +11,13 @@ typedef struct {
     char nome[50];
     char cor[30];
     int tropas;
+    char dono;
 } Territorio;
 
 void exibirMapa(Territorio *mapa);
 void simularAtaque(Territorio *mapa, int atacante, int defensor);
+int verificarMissao(Territorio *mapa, int missao);
+void exibirMissao(int missao);
 
 int main() {
     setlocale(LC_ALL, "pt_BR.UTF-8");
@@ -44,24 +47,59 @@ int main() {
         scanf("%d", &mapa[i].tropas);
         getchar();
 
+        // jeito simples: os 2 primeiros comecam como jogador
+        if (i < 2) {
+            mapa[i].dono = 'J';
+        } else {
+            mapa[i].dono = 'I';
+        }
+
         printf("\n");
     }
 
-    exibirMapa(mapa);
+    int missao = rand() % 2;
 
-    // fase de ataque
+    exibirMapa(mapa);
+    exibirMissao(missao);
+
+    // menu do nivel mestre
     while (1) {
+        int opcao;
         int atacante;
         int defensor;
 
-        printf("\n=== FASE DE ATAQUE ===\n");
-        printf("Escolha atacante (1 a 5, 0 para sair): ");
-        scanf("%d", &atacante);
+        printf("\n=== MENU ===\n");
+        printf("1 - Atacar\n");
+        printf("2 - Verificar Missao\n");
+        printf("0 - Sair\n");
+        printf("Opcao: ");
+        scanf("%d", &opcao);
         getchar();
 
-        if (atacante == 0) {
+        if (opcao == 0) {
             break;
         }
+
+        if (opcao == 2) {
+            exibirMissao(missao);
+            if (verificarMissao(mapa, missao)) {
+                printf("\nParabens! Missao concluida!\n");
+                break;
+            } else {
+                printf("\nAinda nao concluiu a missao.\n");
+            }
+            continue;
+        }
+
+        if (opcao != 1) {
+            printf("Opcao invalida.\n");
+            continue;
+        }
+
+        printf("\n=== FASE DE ATAQUE ===\n");
+        printf("Escolha atacante (1 a 5): ");
+        scanf("%d", &atacante);
+        getchar();
 
         printf("Escolha defensor (1 a 5): ");
         scanf("%d", &defensor);
@@ -81,8 +119,23 @@ int main() {
             continue;
         }
 
+        if (mapa[atacante].dono != 'J') {
+            printf("Esse atacante nao e seu.\n");
+            continue;
+        }
+
+        if (mapa[defensor].dono == 'J') {
+            printf("Nao pode atacar um territorio seu.\n");
+            continue;
+        }
+
         simularAtaque(mapa, atacante, defensor);
         exibirMapa(mapa);
+
+        if (verificarMissao(mapa, missao)) {
+            printf("\nParabens! Missao concluida!\n");
+            break;
+        }
     }
 
     free(mapa);
@@ -98,6 +151,7 @@ void exibirMapa(Territorio *mapa) {
         printf("  Nome: %s\n", mapa[i].nome);
         printf("  Cor: %s\n", mapa[i].cor);
         printf("  Tropas: %d\n\n", mapa[i].tropas);
+        printf("  Dono: %c\n\n", mapa[i].dono);
     }
 }
 
@@ -124,6 +178,42 @@ void simularAtaque(Territorio *mapa, int atacante, int defensor) {
     if (mapa[defensor].tropas <= 0) {
         printf("Territorio conquistado!\n");
         strcpy(mapa[defensor].cor, mapa[atacante].cor);
+        mapa[defensor].dono = mapa[atacante].dono;
         mapa[defensor].tropas = 1;
     }
+}
+
+void exibirMissao(int missao) {
+    printf("\n=== MISSAO ATUAL ===\n");
+    if (missao == 0) {
+        printf("Destruir o exercito Verde.\n");
+    } else {
+        printf("Conquistar 3 territorios.\n");
+    }
+}
+
+int verificarMissao(Territorio *mapa, int missao) {
+    if (missao == 0) {
+        for (int i = 0; i < NUM_TERRITORIOS; i++) {
+            if (strcmp(mapa[i].cor, "Verde") == 0 && mapa[i].dono != 'J') {
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    if (missao == 1) {
+        int cont = 0;
+        for (int i = 0; i < NUM_TERRITORIOS; i++) {
+            if (mapa[i].dono == 'J') {
+                cont++;
+            }
+        }
+
+        if (cont >= 3) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
